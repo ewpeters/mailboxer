@@ -12,6 +12,8 @@ class Mailboxer::Conversation < ActiveRecord::Base
 
   before_validation :clean
 
+  before_create :set_uuid
+
   scope :participant, lambda {|participant|
     where('mailboxer_notifications.type'=> Mailboxer::Message.name).
     order("mailboxer_conversations.updated_at DESC").
@@ -195,5 +197,16 @@ class Mailboxer::Conversation < ActiveRecord::Base
 
   def sanitize(text)
     ::Mailboxer::Cleaner.instance.sanitize(text)
+  end
+
+  private
+
+  def set_uuid
+    generated_uuid = SecureRandom.uuid
+    # collision chances are extremely unlikely, > 1 collision astronomically unlikely
+    while Mailboxer::Conversation.where(uuid: generated_uuid).size > 0 do
+      generated_uuid = SecureRandom.uuid
+    end
+    self.uuid = generated_uuid
   end
 end
